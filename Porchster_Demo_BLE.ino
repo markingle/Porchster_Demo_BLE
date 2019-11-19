@@ -26,6 +26,7 @@
 //#include <BLE2904.h>
 #include <EEPROM.h>
 #include <HardwareSerial.h>
+#include <Keypad.h>
 
 BLEServer* pServer = NULL;
 BLECharacteristic* pCharacteristicA = NULL;
@@ -69,6 +70,22 @@ int Clock_seconds;
 int characteristic_value;
 
 int result;
+
+//Keypad setup
+
+const byte ROWS = 4; //four rows
+const byte COLS = 3; //three columns
+char keys[ROWS][COLS] = {
+  {'1','2','3'},
+  {'4','5','6'},
+  {'7','8','9'},
+  {'*','0','#'}
+};
+byte rowPins[ROWS] = {33, 32, 22, 23}; //connect to the row pinouts of the keypad
+byte colPins[COLS] = {27, 26, 25}; //connect to the column pinouts of the keypad
+String pinCode = "";
+int key_pressed_count = 0;
+
 
 //Timer variables
 hw_timer_t * timer = NULL;
@@ -144,6 +161,8 @@ class MyServerCallbacks: public BLEServerCallbacks {
     }
 };
 
+
+Keypad keypad = Keypad( makeKeymap(keys), rowPins, colPins, ROWS, COLS );
 
 
 void setup() {
@@ -301,6 +320,7 @@ void loop() {
         oldDeviceConnected = deviceConnected;
     }
     recvWithEndMarker();
+    check_keypad();
 }
 
 void recvWithEndMarker() {
@@ -321,10 +341,21 @@ void recvWithEndMarker() {
            receivedChars[ndx] = '\0'; // terminate the string
            ndx = 0;
            //newData = true;
-           MySerial.print(receivedChars);
+           MySerial.println(receivedChars);
            pCharacteristicB->setValue((uint8_t*)&receivedChars, 4);
            pCharacteristicB->notify();
            unlock();
            }
       }
+}
+
+void check_keypad(){
+  char key = keypad.getKey();
+  
+  if (key){
+    if (key == '#'){
+      MySerial.println("Pound entered");
+      unlock();
+    } 
+  }
 }
