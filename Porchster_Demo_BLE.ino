@@ -27,6 +27,7 @@
 #include <EEPROM.h>
 #include <HardwareSerial.h>
 #include <Keypad.h>
+#include <Arduino.h>
 
 BLEServer* pServer = NULL;
 BLECharacteristic* pCharacteristicA = NULL;
@@ -99,12 +100,12 @@ int offtime;  //Off time setting from mobile web app
 
 #define SERVICE_UUID        "4fafc201-1fb5-459e-8fcc-c5c9c331915c"      //Porchster_Service_CBUUID
 #define CHARACTERISTIC_A_UUID "beb5483e-36e1-4688-b7f5-ea07361b26b7"    //Porchster_Solenoid_Characteristic_CBUUID
-#define CHARACTERISTIC_B_UUID "beb5483e-36e1-4688-b7f5-ea07361b26c8"    //Porchster_Scanner_Characteristic_CBUUID
+#define CHARACTERISTIC_B_UUID "beb5483e-36e1-4688-b7f6-ea07361b26c8"    //Porchster_Scanner_Characteristic_CBUUID
 
 
 void unlock(){
   digitalWrite(Solenoid_lock, HIGH);
-  delay(2000);
+  delay(1000);
   digitalWrite(Solenoid_lock,LOW);
 }
 
@@ -183,7 +184,7 @@ void setup() {
   
   Serial.begin(115200);
   MySerial.begin(9600, SERIAL_8N1, 3, 1);
-  Serial.print("My Serial started!");
+  MySerial.print("My Serial started!");
 
   Serial.println("Start up state of pump is OFF");
   timer_state = false;
@@ -191,6 +192,7 @@ void setup() {
   pinMode(TIMER_SWITCH, OUTPUT);
   digitalWrite(TIMER_SWITCH, LOW);
   digitalWrite(Solenoid_lock, LOW);
+
   
   EEPROM.begin(3); //Index of three for - On/Off state 1 or 0, OnTime value, OffTime value
 
@@ -303,20 +305,20 @@ void loop() {
         value++;
         digitalWrite(WIFI_CLIENT_CONNECTED, LOW);
         delay(500); // bluetooth stack will go into congestion, if too many packets are sent, in 6 hours test i was able to go as low as 3ms
-        //pCharacteristicB->setValue((uint8_t*)&onState, 4);
+        //pCharacteristicB->setValue((uint8_t*)&value, 4);
         //pCharacteristicB->notify(); 
     }
     // disconnecting
     if (!deviceConnected && oldDeviceConnected) {
         delay(500); // give the bluetooth stack the chance to get things ready
         pServer->startAdvertising(); // restart advertising
-        Serial.println("start advertising");
+        MySerial.println("start advertising");
         oldDeviceConnected = deviceConnected;
     }
     // connecting
     if (deviceConnected && !oldDeviceConnected) {
         // do stuff here on connecting
-        Serial.println(" Device is connecting");
+        MySerial.println(" Device is connecting");
         oldDeviceConnected = deviceConnected;
     }
     recvWithEndMarker();
@@ -342,7 +344,7 @@ void recvWithEndMarker() {
            ndx = 0;
            //newData = true;
            MySerial.println(receivedChars);
-           pCharacteristicB->setValue((uint8_t*)&receivedChars, 4);
+           pCharacteristicB->setValue((uint8_t*)&receivedChars, 16);
            pCharacteristicB->notify();
            unlock();
            }
@@ -353,9 +355,23 @@ void check_keypad(){
   char key = keypad.getKey();
   
   if (key){
-    if (key == '#'){
-      MySerial.println("Pound entered");
-      unlock();
-    } 
+    key_pressed_count++;
+    MySerial.print(key_pressed_count);
+    MySerial.println(key);
+    if (key_pressed_count <= 5)
+    {
+      if (key == '#' && key_pressed_count == 5)
+      {
+        MySerial.println("Pound entered");
+        unlock();
+        key_pressed_count = 0;
+      } else {
+        return;
+      }
+    } else {
+      if (key_pressed_count > 4) {
+        key_pressed_count = 0;
+      }
+    }
   }
 }
