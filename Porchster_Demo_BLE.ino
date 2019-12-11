@@ -107,6 +107,12 @@ void unlock(){
   digitalWrite(Solenoid_lock, HIGH);
   delay(1000);
   digitalWrite(Solenoid_lock,LOW);
+  int value = 1;
+  if (pumpOn == true)
+  {
+    pCharacteristicA->setValue((uint8_t*)&value, 4);
+    pCharacteristicA->notify();
+  }
 }
 
 class MyCallbacks: public BLECharacteristicCallbacks {
@@ -340,7 +346,8 @@ void recvWithEndMarker() {
          ndx = numChars - 1;
          }
       } else {
-           receivedChars[ndx] = '\0'; // terminate the string
+           //receivedChars[ndx] = '\0'; // terminate the string
+           //receivedChars[ndx-1] = '\0'; // terminate the string
            ndx = 0;
            //newData = true;
            MySerial.println(receivedChars);
