@@ -47,8 +47,8 @@ uint32_t onState = 1;
 
 //These will need to be updated to the GPIO pins for each control circuit.
 int POWER = 13; //13
-int TIMER_SWITCH = 2; 
-int WIFI_CONNECTION = 15; //15
+int TIMER_SWITCH = 0; 
+int BLE_CONNECTION = 2; //15
 int WIFI_CLIENT_CONNECTED = 16; //16
 int Solenoid_lock = 14;  //17
 int SPEED = 2; 
@@ -175,15 +175,13 @@ Keypad keypad = Keypad( makeKeymap(keys), rowPins, colPins, ROWS, COLS );
 void setup() {
 
   pinMode(POWER, OUTPUT);
-  //pinMode(TIMER_SWITCH, OUTPUT);
-  pinMode(WIFI_CONNECTION, OUTPUT);
+  pinMode(BLE_CONNECTION, OUTPUT);
   pinMode(WIFI_CLIENT_CONNECTED, OUTPUT);
   pinMode(Solenoid_lock, OUTPUT);
   pinMode(SPEED, OUTPUT);
   
   digitalWrite(POWER, LOW);
-  //digitalWrite(TIMER_SWITCH, LOW);
-  digitalWrite(WIFI_CONNECTION, LOW);
+  digitalWrite(BLE_CONNECTION, LOW);
   digitalWrite(WIFI_CLIENT_CONNECTED, LOW);
   digitalWrite(Solenoid_lock, LOW);
   digitalWrite(SPEED, LOW);
@@ -195,8 +193,8 @@ void setup() {
   Serial.println("Start up state of pump is OFF");
   timer_state = false;
   pumpOn = false;
-  pinMode(TIMER_SWITCH, OUTPUT);
-  digitalWrite(TIMER_SWITCH, LOW);
+  //pinMode(TIMER_SWITCH, OUTPUT);
+  //digitalWrite(TIMER_SWITCH, LOW);
   digitalWrite(Solenoid_lock, LOW);
 
   
@@ -278,7 +276,7 @@ void IRAM_ATTR onoffTimer(){
     case 0:
       if (pumpOn == false) 
       {
-        digitalWrite(TIMER_SWITCH,LOW);  //We only need to set TIMER_SWITCH once....set pumpOn to TRUE in prep for end of OFFTIME.
+        //digitalWrite(TIMER_SWITCH,LOW);  //We only need to set TIMER_SWITCH once....set pumpOn to TRUE in prep for end of OFFTIME.
         pumpOn = true;
         Serial.println("Turning OFF pump");
         digitalWrite(Solenoid_lock, LOW);
@@ -289,7 +287,7 @@ void IRAM_ATTR onoffTimer(){
     
     case 1:
       if (pumpOn == true) {
-        digitalWrite(TIMER_SWITCH,HIGH);  //We only need to set TIMER_SWITCH once....set pumpOn to FALSE in prep for end of OFFTIME.
+        //digitalWrite(TIMER_SWITCH,HIGH);  //We only need to set TIMER_SWITCH once....set pumpOn to FALSE in prep for end of OFFTIME.
         pumpOn = false;
         Serial.println("Turning ON pump");
         digitalWrite(Solenoid_lock, HIGH);
@@ -309,7 +307,7 @@ void loop() {
         //pCharacteristicD->setValue((uint8_t*)&value, 4);
         //pCharacteristicD->notify();
         value++;
-        digitalWrite(WIFI_CLIENT_CONNECTED, LOW);
+        digitalWrite(BLE_CONNECTION, HIGH);
         //delay(500); // bluetooth stack will go into congestion, if too many packets are sent, in 6 hours test i was able to go as low as 3ms
         //pCharacteristicB->setValue((uint8_t*)&value, 4);
         //pCharacteristicB->notify();
@@ -321,6 +319,7 @@ void loop() {
         //delay(500); // give the bluetooth stack the chance to get things ready
         pServer->startAdvertising(); // restart advertising
         MySerial.println("start advertising");
+        digitalWrite(BLE_CONNECTION, LOW);
         oldDeviceConnected = deviceConnected;
         recvWithEndMarker();
         check_keypad();
@@ -330,9 +329,10 @@ void loop() {
         // do stuff here on connecting
         MySerial.println(" Device is connecting");
         oldDeviceConnected = deviceConnected;
+        digitalWrite(BLE_CONNECTION, HIGH);
     }
-    //recvWithEndMarker();
-    //check_keypad();
+    recvWithEndMarker();
+    check_keypad();
 }
 
 void recvWithEndMarker() {
